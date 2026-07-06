@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useAuth } from "./auth";
 
 export type Staff = {
@@ -40,10 +40,9 @@ export type Timetable = {
   id: string;
   name: string;
   createdAt: number;
-  days: string[]; // Sunday-Saturday
+  days: string[];
   periods: Period[];
   lessons: Lesson[];
-  // schedule[day][periodIdx] = { classId, subjectId, teacherId } or split array
   schedule?: Record<string, Array<{ classId: string; subjectId: string; teacherId: string } | null>>;
 };
 
@@ -56,58 +55,61 @@ export type WorkspaceData = {
 
 const EMPTY: WorkspaceData = { staff: [], subjects: [], classes: [], timetables: [] };
 
-function keyFor(userId: string) {
-  return `tm_data_${userId}`;
-}
+const keyFor = (userId: string) => `tm_data_${userId}`;
 
 export function shortNameOf(name: string) {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 3).toUpperCase();
-  return parts
-    .slice(0, 3)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
+  return parts.slice(0, 3).map((p) => p[0]).join("").toUpperCase();
+}
+
+// Global in-memory cache per user, with subscribers
+const cache = new Map<string, WorkspaceData>();
+const subs = new Map<string, Set<() => void>>();
+
+function load(userId: string): WorkspaceData {
+  if (cache.has(userId)) return cache.get(userId)!;
+  let data: WorkspaceData = EMPTY;
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(keyFor(userId)) : null;
+    if (raw) data = { ...EMPTY, ...JSON.parse(raw) };
+  } catch {}
+  cache.set(userId, data);
+  return data;
+}
+
+function write(userId: string, next: WorkspaceData) {
+  cache.set(userId, next);
+  try { localStorage.setItem(keyFor(userId), JSON.stringify(next)); } catch {}
+  subs.get(userId)?.forEach((fn) => fn());
+}
+
+function subscribe(userId: string, fn: () => void) {
+  if (!subs.has(userId)) subs.set(userId, new Set());
+  subs.get(userId)!.add(fn);
+  return () => subs.get(userId)!.delete(fn);
 }
 
 export function useStore() {
   const { user } = useAuth();
-  const [data, setData] = useState<WorkspaceData>(EMPTY);
+  const userId = user?.id ?? "__anon__";
 
-  useEffect(() => {
-    if (!user) {
-      setData(EMPTY);
-      return;
-    }
-    try {
-      const raw = localStorage.getItem(keyFor(user.id));
-      setData(raw ? JSON.parse(raw) : EMPTY);
-    } catch {
-      setData(EMPTY);
-    }
-  }, [user]);
-
-  const persist = useCallback(
-    (next: WorkspaceData) => {
-      if (!user) return;
-      localStorage.setItem(keyFor(user.id), JSON.stringify(next));
-      setData(next);
-    },
-    [user]
+  const data = useSyncExternalStore(
+    useCallback((cb) => subscribe(userId, cb), [userId]),
+    useCallback(() => load(userId), [userId]),
+    () => EMPTY
   );
 
+  // Ensure cache is warm client-side after mount (for SSR consistency)
+  useEffect(() => { load(userId); }, [userId]);
+
+  const setData = useCallback((next: WorkspaceData) => write(userId, next), [userId]);
   const update = useCallback(
-    (fn: (d: WorkspaceData) => WorkspaceData) => {
-      setData((cur) => {
-        const next = fn(cur);
-        if (user) localStorage.setItem(keyFor(user.id), JSON.stringify(next));
-        return next;
-      });
-    },
-    [user]
+    (fn: (d: WorkspaceData) => WorkspaceData) => write(userId, fn(load(userId))),
+    [userId]
   );
 
-  return { data, setData: persist, update };
+  return { data, setData, update };
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
