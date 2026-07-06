@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { StoreProvider } from "@/lib/store";
 import {
   Sidebar,
   SidebarContent,
@@ -34,26 +33,24 @@ function AppLayout() {
   if (!user) return null;
 
   return (
-    <StoreProvider>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar userName={user.name} onLogout={() => { logout(); navigate({ to: "/login" }); }} />
-          <div className="flex flex-1 flex-col">
-            <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2 font-semibold">
-                <CalendarClock className="h-5 w-5 text-primary" />
-                TimetableMaster
-              </div>
-              <div className="ml-auto text-sm text-muted-foreground">{user.name}</div>
-            </header>
-            <main className="flex-1 p-4 md:p-8">
-              <Outlet />
-            </main>
-          </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar userName={user.name} onLogout={() => { logout(); navigate({ to: "/login" }); }} />
+        <div className="flex flex-1 flex-col">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
+            <SidebarTrigger />
+            <div className="flex items-center gap-2 font-semibold">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              TimetableMaster
+            </div>
+            <div className="ml-auto text-sm text-muted-foreground">{user.name}</div>
+          </header>
+          <main className="flex-1 p-4 md:p-8">
+            <Outlet />
+          </main>
         </div>
-      </SidebarProvider>
-    </StoreProvider>
+      </div>
+    </SidebarProvider>
   );
 }
 

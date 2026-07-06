@@ -28,13 +28,9 @@ function addMinutes(hhmm: string, mins: number) {
 
 function WizardPage() {
   const { id } = Route.useParams();
-  const { data, loaded } = useStore();
+  const { data, update } = useStore();
   const navigate = useNavigate();
   const tt = data.timetables.find((t) => t.id === id);
-
-  if (!loaded) {
-    return <div className="mx-auto max-w-3xl p-8 text-sm text-muted-foreground">Loading…</div>;
-  }
 
   if (!tt) {
     return (

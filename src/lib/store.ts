@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "./auth";
 
 export type Staff = {
@@ -40,9 +40,10 @@ export type Timetable = {
   id: string;
   name: string;
   createdAt: number;
-  days: string[];
+  days: string[]; // Sunday-Saturday
   periods: Period[];
   lessons: Lesson[];
+  // schedule[day][periodIdx] = { classId, subjectId, teacherId } or split array
   schedule?: Record<string, Array<{ classId: string; subjectId: string; teacherId: string } | null>>;
 };
 
@@ -62,28 +63,20 @@ function keyFor(userId: string) {
 export function shortNameOf(name: string) {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 3).toUpperCase();
-  return parts.slice(0, 3).map((p) => p[0]).join("").toUpperCase();
+  return parts
+    .slice(0, 3)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
 }
 
-type StoreCtx = {
-  data: WorkspaceData;
-  loaded: boolean;
-  setData: (d: WorkspaceData) => void;
-  update: (fn: (d: WorkspaceData) => WorkspaceData) => void;
-};
-
-const StoreContext = createContext<StoreCtx | null>(null);
-
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function useStore() {
   const { user } = useAuth();
   const [data, setData] = useState<WorkspaceData>(EMPTY);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setLoaded(false);
     if (!user) {
       setData(EMPTY);
-      setLoaded(true);
       return;
     }
     try {
@@ -92,12 +85,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {
       setData(EMPTY);
     }
-    setLoaded(true);
   }, [user]);
 
   const persist = useCallback(
     (next: WorkspaceData) => {
-      if (user) localStorage.setItem(keyFor(user.id), JSON.stringify(next));
+      if (!user) return;
+      localStorage.setItem(keyFor(user.id), JSON.stringify(next));
       setData(next);
     },
     [user]
@@ -114,17 +107,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
-  return (
-    <StoreContext.Provider value={{ data, loaded, setData: persist, update }}>
-      {children}
-    </StoreContext.Provider>
-  );
-}
-
-export function useStore() {
-  const c = useContext(StoreContext);
-  if (!c) throw new Error("useStore must be used within StoreProvider");
-  return c;
+  return { data, setData: persist, update };
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
