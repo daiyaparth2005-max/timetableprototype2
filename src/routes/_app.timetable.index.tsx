@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, CalendarClock, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/timetable")({
+export const Route = createFileRoute("/_app/timetable/")({
   component: TimetableListPage,
 });
 

@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
 import { Route as AppSetupRouteImport } from './routes/_app.setup'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppTimetableIndexRouteImport } from './routes/_app.timetable.index'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -30,11 +30,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppTimetableRoute = AppTimetableRouteImport.update({
-  id: '/timetable',
-  path: '/timetable',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppSetupRoute = AppSetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -45,20 +40,25 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTimetableIndexRoute = AppTimetableIndexRouteImport.update({
+  id: '/timetable/',
+  path: '/timetable/',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/setup': typeof AppSetupRoute
-  '/timetable': typeof AppTimetableRoute
+  '/timetable/': typeof AppTimetableIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/setup': typeof AppSetupRoute
-  '/timetable': typeof AppTimetableRoute
+  '/timetable': typeof AppTimetableIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -67,11 +67,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/setup': typeof AppSetupRoute
-  '/_app/timetable': typeof AppTimetableRoute
+  '/_app/timetable/': typeof AppTimetableIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/setup' | '/timetable'
+  fullPaths: '/' | '/login' | '/dashboard' | '/setup' | '/timetable/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/login' | '/dashboard' | '/setup' | '/timetable'
   id:
@@ -81,7 +81,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/dashboard'
     | '/_app/setup'
-    | '/_app/timetable'
+    | '/_app/timetable/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,13 +113,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/timetable': {
-      id: '/_app/timetable'
-      path: '/timetable'
-      fullPath: '/timetable'
-      preLoaderRoute: typeof AppTimetableRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/setup': {
       id: '/_app/setup'
       path: '/setup'
@@ -134,19 +127,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/timetable/': {
+      id: '/_app/timetable/'
+      path: '/timetable'
+      fullPath: '/timetable/'
+      preLoaderRoute: typeof AppTimetableIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppSetupRoute: typeof AppSetupRoute
-  AppTimetableRoute: typeof AppTimetableRoute
+  AppTimetableIndexRoute: typeof AppTimetableIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppSetupRoute: AppSetupRoute,
-  AppTimetableRoute: AppTimetableRoute,
+  AppTimetableIndexRoute: AppTimetableIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
