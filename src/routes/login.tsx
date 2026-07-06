@@ -12,15 +12,15 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, hydrated, login } = useAuth();
   const navigate = useNavigate();
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    if (user) navigate({ to: "/dashboard" });
-  }, [user, navigate]);
+    if (hydrated && user) navigate({ to: "/dashboard" });
+  }, [user, hydrated, navigate]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

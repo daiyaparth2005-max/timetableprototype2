@@ -27,9 +27,14 @@ function TimetableListPage() {
     navigate({ to: "/timetable/$id", params: { id: t.id } });
   };
 
+  const remove = (id: string) => {
+    update((d) => ({ ...d, timetables: d.timetables.filter((x) => x.id !== id) }));
+    toast.success("Timetable deleted");
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">My Timetables</h1>
           <p className="text-muted-foreground">Your saved schedules.</p>
@@ -54,11 +59,14 @@ function TimetableListPage() {
             <Card key={t.id} className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between text-base">
-                  {t.name}
+                  <span className="truncate">{t.name}</span>
                   <button
-                    onClick={() => update((d) => ({ ...d, timetables: d.timetables.filter((x) => x.id !== t.id) }))}
+                    aria-label="Delete timetable"
+                    onClick={() => remove(t.id)}
                     className="opacity-40 hover:opacity-100"
-                  ><Trash2 className="h-4 w-4" /></button>
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </CardTitle>
                 <CardDescription>
                   {t.periods.length} periods · {t.days.length} days · {t.lessons.length} lessons
@@ -66,7 +74,9 @@ function TimetableListPage() {
               </CardHeader>
               <CardContent>
                 <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to="/timetable/$id" params={{ id: t.id }}>Open <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link to="/timetable/$id" params={{ id: t.id }}>
+                    Open <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </CardContent>
             </Card>

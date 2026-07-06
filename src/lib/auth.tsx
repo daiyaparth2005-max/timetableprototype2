@@ -9,6 +9,7 @@ const USERS: Record<string, { pass: string; user: User }> = {
 
 type Ctx = {
   user: User | null;
+  hydrated: boolean;
   login: (u: string, p: string) => boolean;
   logout: () => void;
 };
@@ -17,12 +18,14 @@ const AuthCtx = createContext<Ctx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("tm_current_user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
+    setHydrated(true);
   }, []);
 
   const login = (u: string, p: string) => {
@@ -40,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  return <AuthCtx.Provider value={{ user, login, logout }}>{children}</AuthCtx.Provider>;
+  return <AuthCtx.Provider value={{ user, hydrated, login, logout }}>{children}</AuthCtx.Provider>;
 }
 
 export function useAuth() {
