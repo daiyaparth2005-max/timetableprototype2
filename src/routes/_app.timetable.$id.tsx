@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore, uid, type Period, type Lesson, type LessonGroup } from "@/lib/store";
+import { useStore, uid, type Period, type Lesson, type LessonGroup, type GeneratedGrid, type GeneratedCell } from "@/lib/store";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
