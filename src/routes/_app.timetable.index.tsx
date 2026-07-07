@@ -78,11 +78,17 @@ function TimetableListPage() {
                     Open <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="secondary" size="sm" className="flex-1" disabled={!t.generated}>
-                  <Link to="/timetable/$id/preview" params={{ id: t.id }}>
+                {t.generated ? (
+                  <Button asChild variant="secondary" size="sm" className="flex-1">
+                    <Link to="/timetable/$id/preview" params={{ id: t.id }}>
+                      <Eye className="mr-1 h-4 w-4" /> Preview
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" className="flex-1" disabled title="Generate the timetable first">
                     <Eye className="mr-1 h-4 w-4" /> Preview
-                  </Link>
-                </Button>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
