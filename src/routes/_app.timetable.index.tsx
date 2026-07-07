@@ -72,10 +72,15 @@ function TimetableListPage() {
                   {t.periods.length} periods · {t.days.length} days · {t.lessons.length} lessons
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button asChild variant="outline" size="sm" className="w-full">
+              <CardContent className="flex gap-2">
+                <Button asChild variant="outline" size="sm" className="flex-1">
                   <Link to="/timetable/$id" params={{ id: t.id }}>
                     Open <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm" className="flex-1" disabled={!t.generated}>
+                  <Link to="/timetable/$id/preview" params={{ id: t.id }}>
+                    <Eye className="mr-1 h-4 w-4" /> Preview
                   </Link>
                 </Button>
               </CardContent>
