@@ -36,6 +36,9 @@ export type Lesson = {
   frequency: number;
 };
 
+export type GeneratedCell = { subjectId: string; teacherId: string; groupLabel?: string };
+export type GeneratedGrid = Record<string, GeneratedCell[][][]>; // classId -> day -> period -> cells
+
 export type Timetable = {
   id: string;
   name: string;
@@ -43,8 +46,9 @@ export type Timetable = {
   days: string[];
   periods: Period[];
   lessons: Lesson[];
-  schedule?: Record<string, Array<{ classId: string; subjectId: string; teacherId: string } | null>>;
+  generated?: { grid: GeneratedGrid; days: string[]; periodNames: string[]; createdAt: number } | null;
 };
+
 
 export type WorkspaceData = {
   staff: Staff[];
