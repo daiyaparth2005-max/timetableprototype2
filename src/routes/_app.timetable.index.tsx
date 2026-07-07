@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useStore, uid, type Timetable } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, CalendarClock, ArrowRight, Trash2 } from "lucide-react";
+import { Plus, CalendarClock, ArrowRight, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/timetable/")({
@@ -72,12 +72,23 @@ function TimetableListPage() {
                   {t.periods.length} periods · {t.days.length} days · {t.lessons.length} lessons
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button asChild variant="outline" size="sm" className="w-full">
+              <CardContent className="flex gap-2">
+                <Button asChild variant="outline" size="sm" className="flex-1">
                   <Link to="/timetable/$id" params={{ id: t.id }}>
                     Open <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+                {t.generated ? (
+                  <Button asChild variant="secondary" size="sm" className="flex-1">
+                    <Link to="/timetable/$id/preview" params={{ id: t.id }}>
+                      <Eye className="mr-1 h-4 w-4" /> Preview
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" className="flex-1" disabled title="Generate the timetable first">
+                    <Eye className="mr-1 h-4 w-4" /> Preview
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
