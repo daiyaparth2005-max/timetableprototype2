@@ -16,6 +16,7 @@ import { Route as AppSetupRouteImport } from './routes/_app.setup'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppTimetableIndexRouteImport } from './routes/_app.timetable.index'
 import { Route as AppTimetableIdRouteImport } from './routes/_app.timetable.$id'
+import { Route as AppTimetableIdPreviewRouteImport } from './routes/_app.timetable.$id.preview'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -51,22 +52,29 @@ const AppTimetableIdRoute = AppTimetableIdRouteImport.update({
   path: '/timetable/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTimetableIdPreviewRoute = AppTimetableIdPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => AppTimetableIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/setup': typeof AppSetupRoute
-  '/timetable/$id': typeof AppTimetableIdRoute
+  '/timetable/$id': typeof AppTimetableIdRouteWithChildren
   '/timetable/': typeof AppTimetableIndexRoute
+  '/timetable/$id/preview': typeof AppTimetableIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/setup': typeof AppSetupRoute
-  '/timetable/$id': typeof AppTimetableIdRoute
+  '/timetable/$id': typeof AppTimetableIdRouteWithChildren
   '/timetable': typeof AppTimetableIndexRoute
+  '/timetable/$id/preview': typeof AppTimetableIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,8 +83,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/setup': typeof AppSetupRoute
-  '/_app/timetable/$id': typeof AppTimetableIdRoute
+  '/_app/timetable/$id': typeof AppTimetableIdRouteWithChildren
   '/_app/timetable/': typeof AppTimetableIndexRoute
+  '/_app/timetable/$id/preview': typeof AppTimetableIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,8 +96,16 @@ export interface FileRouteTypes {
     | '/setup'
     | '/timetable/$id'
     | '/timetable/'
+    | '/timetable/$id/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/setup' | '/timetable/$id' | '/timetable'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/setup'
+    | '/timetable/$id'
+    | '/timetable'
+    | '/timetable/$id/preview'
   id:
     | '__root__'
     | '/'
@@ -98,6 +115,7 @@ export interface FileRouteTypes {
     | '/_app/setup'
     | '/_app/timetable/$id'
     | '/_app/timetable/'
+    | '/_app/timetable/$id/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,20 +175,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTimetableIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/timetable/$id/preview': {
+      id: '/_app/timetable/$id/preview'
+      path: '/preview'
+      fullPath: '/timetable/$id/preview'
+      preLoaderRoute: typeof AppTimetableIdPreviewRouteImport
+      parentRoute: typeof AppTimetableIdRoute
+    }
   }
 }
+
+interface AppTimetableIdRouteChildren {
+  AppTimetableIdPreviewRoute: typeof AppTimetableIdPreviewRoute
+}
+
+const AppTimetableIdRouteChildren: AppTimetableIdRouteChildren = {
+  AppTimetableIdPreviewRoute: AppTimetableIdPreviewRoute,
+}
+
+const AppTimetableIdRouteWithChildren = AppTimetableIdRoute._addFileChildren(
+  AppTimetableIdRouteChildren,
+)
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppSetupRoute: typeof AppSetupRoute
-  AppTimetableIdRoute: typeof AppTimetableIdRoute
+  AppTimetableIdRoute: typeof AppTimetableIdRouteWithChildren
   AppTimetableIndexRoute: typeof AppTimetableIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppSetupRoute: AppSetupRoute,
-  AppTimetableIdRoute: AppTimetableIdRoute,
+  AppTimetableIdRoute: AppTimetableIdRouteWithChildren,
   AppTimetableIndexRoute: AppTimetableIndexRoute,
 }
 
