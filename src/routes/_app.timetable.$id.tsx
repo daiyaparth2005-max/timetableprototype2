@@ -138,67 +138,104 @@ function GenerateStep({ id }: { id: string }) {
     const P = periods.length;
     const D = days.length;
 
-    // Init grid: per class -> day -> period -> cells[]
     const grid: GeneratedGrid = {};
     for (const c of data.classes) {
       grid[c.id] = Array.from({ length: D }, () => Array.from({ length: P }, () => [] as GeneratedCell[]));
     }
 
-    const teacherBusy = new Set<string>(); // key: day|period|teacherId
-    const classBusy = new Set<string>(); // key: classId|day|period (non-split)
-
+    const teacherBusy = new Set<string>();
+    const classBusy = new Set<string>();
     const key = (d: number, p: number, t: string) => `${d}|${p}|${t}`;
     const cKey = (c: string, d: number, p: number) => `${c}|${d}|${p}`;
 
-    // Build slot order shuffled per lesson for spread
-    const shuffle = <T,>(a: T[]) => {
-      const arr = [...a];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+    const teachersOf = (l: Lesson) => (l.split ? l.groups.map((g) => g.teacherId) : [l.teacherId]);
+    const canPlace = (l: Lesson, d: number, p: number) => {
+      if (classBusy.has(cKey(l.classId, d, p))) return false;
+      return !teachersOf(l).some((t) => t && teacherBusy.has(key(d, p, t)));
+    };
+    const doPlace = (l: Lesson, d: number, p: number) => {
+      if (l.split) {
+        for (const g of l.groups) {
+          grid[l.classId][d][p].push({ subjectId: g.subjectId, teacherId: g.teacherId, groupLabel: g.label });
+          if (g.teacherId) teacherBusy.add(key(d, p, g.teacherId));
+        }
+      } else {
+        grid[l.classId][d][p].push({ subjectId: l.subjectId, teacherId: l.teacherId });
+        if (l.teacherId) teacherBusy.add(key(d, p, l.teacherId));
       }
-      return arr;
+      classBusy.add(cKey(l.classId, d, p));
     };
 
+    // Sort lessons by frequency desc (harder first) for better packing.
+    const lessons = [...tt.lessons].sort((a, b) => b.frequency - a.frequency);
     const unplaced: string[] = [];
 
-    for (const lesson of tt.lessons) {
-      if (!grid[lesson.classId]) continue;
-      const teachers = lesson.split ? lesson.groups.map((g) => g.teacherId) : [lesson.teacherId];
-      const placementsPerDay = new Map<number, number>();
+    for (const l of lessons) {
+      if (!grid[l.classId]) continue;
+      const freq = l.frequency;
+      if (freq <= 0) continue;
 
+      const perDay = D > 0 ? Math.floor(freq / D) : 0;
+      const extras = freq - perDay * D;
       let placed = 0;
-      const slots: Array<{ d: number; p: number }> = [];
-      for (let d = 0; d < D; d++) for (let p = 0; p < P; p++) slots.push({ d, p });
-      // Prefer spreading: sort by (day placements so far, random)
-      const ordered = shuffle(slots);
 
-      for (const { d, p } of ordered) {
-        if (placed >= lesson.frequency) break;
-        if (classBusy.has(cKey(lesson.classId, d, p))) continue;
-        // Limit: at most 2 of same lesson per day
-        if ((placementsPerDay.get(d) ?? 0) >= 2) continue;
-        // Check teachers free
-        if (teachers.some((t) => t && teacherBusy.has(key(d, p, t)))) continue;
-
-        // Place
-        if (lesson.split) {
-          for (const g of lesson.groups) {
-            grid[lesson.classId][d][p].push({ subjectId: g.subjectId, teacherId: g.teacherId, groupLabel: g.label });
-            teacherBusy.add(key(d, p, g.teacherId));
+      // Step 1: place `perDay` consecutive periods per day at a FIXED starting slot
+      // across every day (keeps repeated lessons clustered and stable).
+      if (perDay > 0) {
+        let chosen = -1;
+        for (let p0 = 0; p0 + perDay <= P; p0++) {
+          let allDaysOk = true;
+          for (let d = 0; d < D && allDaysOk; d++) {
+            for (let k = 0; k < perDay; k++) {
+              if (!canPlace(l, d, p0 + k)) { allDaysOk = false; break; }
+            }
+          }
+          if (allDaysOk) { chosen = p0; break; }
+        }
+        if (chosen >= 0) {
+          for (let d = 0; d < D; d++) {
+            for (let k = 0; k < perDay; k++) doPlace(l, d, chosen + k);
+            placed += perDay;
           }
         } else {
-          grid[lesson.classId][d][p].push({ subjectId: lesson.subjectId, teacherId: lesson.teacherId });
-          teacherBusy.add(key(d, p, lesson.teacherId));
+          // Fallback: per-day search for `perDay` consecutive free periods (still clustered).
+          for (let d = 0; d < D; d++) {
+            let found = -1;
+            for (let p0 = 0; p0 + perDay <= P; p0++) {
+              let ok = true;
+              for (let k = 0; k < perDay; k++) {
+                if (!canPlace(l, d, p0 + k)) { ok = false; break; }
+              }
+              if (ok) { found = p0; break; }
+            }
+            if (found >= 0) {
+              for (let k = 0; k < perDay; k++) doPlace(l, d, found + k);
+              placed += perDay;
+            }
+          }
         }
-        classBusy.add(cKey(lesson.classId, d, p));
-        placementsPerDay.set(d, (placementsPerDay.get(d) ?? 0) + 1);
-        placed++;
       }
 
-      if (placed < lesson.frequency) {
-        const cls = data.classes.find((c) => c.id === lesson.classId)?.name ?? "class";
-        unplaced.push(`${cls}: placed ${placed}/${lesson.frequency}`);
+      // Step 2: place extras — one additional period on `extras` distinct days
+      // (or `freq` days if perDay was 0). Prefer earliest free period.
+      const remainingDays = extras > 0 ? extras : (perDay === 0 ? freq : 0);
+      const dayOrder = Array.from({ length: D }, (_, i) => i);
+      let need = remainingDays;
+      for (const d of dayOrder) {
+        if (need <= 0) break;
+        for (let p = 0; p < P; p++) {
+          if (canPlace(l, d, p)) {
+            doPlace(l, d, p);
+            placed++;
+            need--;
+            break;
+          }
+        }
+      }
+
+      if (placed < freq) {
+        const cls = data.classes.find((c) => c.id === l.classId)?.name ?? "class";
+        unplaced.push(`${cls}: placed ${placed}/${freq}`);
       }
     }
 
