@@ -131,7 +131,16 @@ function StaffSection() {
                     <TableCell>{s.designation}</TableCell>
                     <TableCell>{s.subject}</TableCell>
                     <TableCell>{s.employment}</TableCell>
-                    <TableCell><Button size="icon" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/teacher/$id" params={{ id: s.id }}>
+                            <CalendarClock className="mr-1 h-3.5 w-3.5" /> Daily Schedule
+                          </Link>
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
