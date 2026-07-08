@@ -34,6 +34,95 @@ function TimetableListPage() {
     toast.success("Timetable deleted");
   };
 
+  const downloadPdf = (t: Timetable) => {
+    if (!t.generated) return toast.error("Generate the timetable first");
+    const g = t.generated;
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 32;
+
+    const classIds = Object.keys(g.grid);
+    if (classIds.length === 0) return toast.error("No classes in this timetable");
+
+    classIds.forEach((classId, idx) => {
+      if (idx > 0) doc.addPage();
+      const cls = data.classes.find((c) => c.id === classId);
+      const clsName = cls?.name ?? classId;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(t.name, margin, margin + 4);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Class: ${clsName}`, margin, margin + 22);
+
+      // Table
+      const cols = ["Day", ...g.periodNames];
+      const startY = margin + 42;
+      const availW = pageW - margin * 2;
+      const dayColW = 80;
+      const periodColW = (availW - dayColW) / Math.max(1, g.periodNames.length);
+      const rowH = 44;
+      const headerH = 22;
+
+      // Header
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(180);
+      doc.rect(margin, startY, availW, headerH, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      cols.forEach((c, i) => {
+        const x = margin + (i === 0 ? 0 : dayColW + periodColW * (i - 1));
+        const w = i === 0 ? dayColW : periodColW;
+        doc.text(c, x + w / 2, startY + 14, { align: "center", maxWidth: w - 4 });
+      });
+
+      // Rows
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      g.days.forEach((day, dIdx) => {
+        const y = startY + headerH + dIdx * rowH;
+        if (y + rowH > pageH - margin) return; // overflow guard
+        doc.rect(margin, y, availW, rowH);
+        doc.setFont("helvetica", "bold");
+        doc.text(day, margin + dayColW / 2, y + rowH / 2, { align: "center" });
+        doc.setFont("helvetica", "normal");
+
+        g.periodNames.forEach((_p, pIdx) => {
+          const x = margin + dayColW + periodColW * pIdx;
+          doc.rect(x, y, periodColW, rowH);
+          const cells = g.grid[classId]?.[dIdx]?.[pIdx] ?? [];
+          if (cells.length === 0) return;
+          const lines: string[] = [];
+          for (const cell of cells) {
+            const subj = data.subjects.find((s) => s.id === cell.subjectId)?.shortName ?? "?";
+            const teach = data.staff.find((s) => s.id === cell.teacherId)?.shortName ?? "?";
+            const label = cell.groupLabel ? `[${cell.groupLabel}] ` : "";
+            lines.push(`${label}${subj} · ${teach}`);
+          }
+          doc.text(lines, x + 4, y + 12, { maxWidth: periodColW - 8 });
+        });
+      });
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(
+        `Page ${idx + 1} of ${classIds.length}`,
+        pageW - margin,
+        pageH - margin / 2,
+        { align: "right" }
+      );
+      doc.setTextColor(0);
+    });
+
+    const safe = t.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    doc.save(`${safe || "timetable"}-all-classes.pdf`);
+    toast.success("Downloaded PDF");
+  };
+
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
