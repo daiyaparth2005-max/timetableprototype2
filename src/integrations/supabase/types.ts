@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workspace_data: {
+        Row: {
+          classes: Json
+          space_id: string
+          staff: Json
+          subjects: Json
+          timetables: Json
+          updated_at: string
+        }
+        Insert: {
+          classes?: Json
+          space_id: string
+          staff?: Json
+          subjects?: Json
+          timetables?: Json
+          updated_at?: string
+        }
+        Update: {
+          classes?: Json
+          space_id?: string
+          staff?: Json
+          subjects?: Json
+          timetables?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
