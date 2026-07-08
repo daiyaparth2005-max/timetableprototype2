@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore, shortNameOf, uid, type Staff, type Subject, type ClassItem } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Users, BookOpen, School, CalendarClock } from "lucide-react";
+import { AddWithBulk } from "@/components/AddWithBulk";
 
 export const Route = createFileRoute("/_app/setup")({
   component: SetupPage,
@@ -39,6 +40,7 @@ function SetupPage() {
 
 function StaffSection() {
   const { data, update } = useStore();
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<Omit<Staff, "id" | "shortName">>({
     name: "", email: "", number: "", designation: "Teacher", subject: "", employment: "Full-Time",
   });
@@ -54,15 +56,53 @@ function StaffSection() {
 
   const remove = (id: string) => update((d) => ({ ...d, staff: d.staff.filter((s) => s.id !== id) }));
 
+  const bulkImport = async (rows: Record<string, string>[]) => {
+    let added = 0, skipped = 0;
+    const valid: Staff[] = [];
+    for (const r of rows) {
+      if (!r.name) { skipped++; continue; }
+      const emp = /part/i.test(r.employment || "") ? "Part-Time" : "Full-Time";
+      valid.push({
+        id: uid(),
+        name: r.name,
+        shortName: shortNameOf(r.name),
+        email: r.email || "",
+        number: r.number || "",
+        designation: r.designation || "Teacher",
+        subject: r.subject || "",
+        employment: emp,
+      });
+      added++;
+    }
+    update((d) => ({ ...d, staff: [...d.staff, ...valid] }));
+    return { added, skipped };
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
       <Card>
-        <CardHeader>
-          <CardTitle>Add Teacher</CardTitle>
-          <CardDescription>Short name is auto-generated from Name.</CardDescription>
+        <CardHeader className="flex-row items-start justify-between space-y-0 gap-2">
+          <div>
+            <CardTitle>Add Teacher</CardTitle>
+            <CardDescription>Short name is auto-generated.</CardDescription>
+          </div>
+          <AddWithBulk
+            addLabel="Add Staff"
+            onAddClick={() => formRef.current?.querySelector<HTMLInputElement>("input")?.focus()}
+            templateName="staff-template.xlsx"
+            columns={[
+              { key: "name", label: "Name", required: true, example: "Jane Doe" },
+              { key: "email", label: "Email", example: "jane@school.edu" },
+              { key: "number", label: "Number", example: "+1 555 0100" },
+              { key: "designation", label: "Designation", example: "Teacher" },
+              { key: "subject", label: "Subject", example: "Math" },
+              { key: "employment", label: "Employment", example: "Full-Time" },
+            ]}
+            onImport={bulkImport}
+          />
         </CardHeader>
         <CardContent>
-          <form onSubmit={add} className="space-y-3">
+          <form ref={formRef} onSubmit={add} className="space-y-3">
             <div>
               <Label>Name</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" />
@@ -165,6 +205,18 @@ function SubjectsSection() {
     toast.success(`${s.name} added`);
   };
 
+  const bulkImport = async (rows: Record<string, string>[]) => {
+    let added = 0, skipped = 0;
+    const valid: Subject[] = [];
+    for (const r of rows) {
+      if (!r.name) { skipped++; continue; }
+      valid.push({ id: uid(), name: r.name, shortName: r.shortName || shortNameOf(r.name) });
+      added++;
+    }
+    update((d) => ({ ...d, subjects: [...d.subjects, ...valid] }));
+    return { added, skipped };
+  };
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -172,7 +224,16 @@ function SubjectsSection() {
           <CardTitle>Subject Library ({data.subjects.length}/25)</CardTitle>
           <CardDescription>Scale up to 20–25 subjects.</CardDescription>
         </div>
-        <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" /> Add Subject</Button>
+        <AddWithBulk
+          addLabel="Add Subject"
+          onAddClick={() => setAdding(true)}
+          templateName="subjects-template.xlsx"
+          columns={[
+            { key: "name", label: "Name", required: true, example: "Mathematics" },
+            { key: "shortName", label: "Short Name", example: "MAT" },
+          ]}
+          onImport={bulkImport}
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {adding && (
@@ -204,6 +265,7 @@ function SubjectsSection() {
 
 function ClassesSection() {
   const { data, update } = useStore();
+  const formRef = useRef<HTMLFormElement>(null);
   const [name, setName] = useState("");
   const [teacherId, setTeacherId] = useState("");
 
@@ -216,15 +278,46 @@ function ClassesSection() {
     toast.success(`${c.name} added`);
   };
 
+  const bulkImport = async (rows: Record<string, string>[]) => {
+    let added = 0, skipped = 0;
+    const valid: ClassItem[] = [];
+    for (const r of rows) {
+      if (!r.name) { skipped++; continue; }
+      // Resolve teacher by name (case-insensitive)
+      let tId = "";
+      if (r.classTeacher) {
+        const t = data.staff.find((s) => s.name.trim().toLowerCase() === r.classTeacher.trim().toLowerCase());
+        if (t) tId = t.id;
+      }
+      valid.push({ id: uid(), name: r.name, shortName: r.shortName || shortNameOf(r.name), classTeacherId: tId });
+      added++;
+    }
+    update((d) => ({ ...d, classes: [...d.classes, ...valid] }));
+    return { added, skipped };
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
       <Card>
-        <CardHeader>
-          <CardTitle>Add Class</CardTitle>
-          <CardDescription>Assign a class teacher from your staff library.</CardDescription>
+        <CardHeader className="flex-row items-start justify-between space-y-0 gap-2">
+          <div>
+            <CardTitle>Add Class</CardTitle>
+            <CardDescription>Assign a class teacher.</CardDescription>
+          </div>
+          <AddWithBulk
+            addLabel="Add Class"
+            onAddClick={() => formRef.current?.querySelector<HTMLInputElement>("input")?.focus()}
+            templateName="classes-template.xlsx"
+            columns={[
+              { key: "name", label: "Name", required: true, example: "12th Science" },
+              { key: "shortName", label: "Short Name", example: "12S" },
+              { key: "classTeacher", label: "Class Teacher", example: "Jane Doe" },
+            ]}
+            onImport={bulkImport}
+          />
         </CardHeader>
         <CardContent>
-          <form onSubmit={add} className="space-y-3">
+          <form ref={formRef} onSubmit={add} className="space-y-3">
             <div>
               <Label>Class Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., 12th Science" />
