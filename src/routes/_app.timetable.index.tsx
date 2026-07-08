@@ -163,24 +163,35 @@ function TimetableListPage() {
                   {t.periods.length} periods · {t.days.length} days · {t.lessons.length} lessons
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex gap-2">
-                <Button asChild variant="outline" size="sm" className="flex-1">
+              <CardContent className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm" className="flex-1 min-w-[110px]">
                   <Link to="/timetable/$id" params={{ id: t.id }}>
                     Open <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 {t.generated ? (
-                  <Button asChild variant="secondary" size="sm" className="flex-1">
+                  <Button asChild variant="secondary" size="sm" className="flex-1 min-w-[110px]">
                     <Link to="/timetable/$id/preview" params={{ id: t.id }}>
                       <Eye className="mr-1 h-4 w-4" /> Preview
                     </Link>
                   </Button>
                 ) : (
-                  <Button variant="secondary" size="sm" className="flex-1" disabled title="Generate the timetable first">
+                  <Button variant="secondary" size="sm" className="flex-1 min-w-[110px]" disabled title="Generate the timetable first">
                     <Eye className="mr-1 h-4 w-4" /> Preview
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-w-[110px]"
+                  disabled={!t.generated}
+                  title={t.generated ? "Download all classes as PDF" : "Generate the timetable first"}
+                  onClick={() => downloadPdf(t)}
+                >
+                  <Download className="mr-1 h-4 w-4" /> Download PDF
+                </Button>
               </CardContent>
+
             </Card>
           ))}
         </div>
