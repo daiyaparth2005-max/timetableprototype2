@@ -22,9 +22,11 @@ function LoginPage() {
     if (hydrated && user) navigate({ to: "/dashboard" });
   }, [user, hydrated, navigate]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(u, p)) navigate({ to: "/dashboard" });
+    setErr("");
+    const ok = await login(u, p);
+    if (ok) navigate({ to: "/dashboard" });
     else setErr("Invalid credentials. Try 'test 1' / 'test 1' or 'test 2' / 'test 2'.");
   };
 
