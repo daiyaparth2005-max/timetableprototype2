@@ -2,12 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useStore, uid, type Timetable } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, CalendarClock, ArrowRight, Trash2, Eye } from "lucide-react";
+import { Plus, CalendarClock, ArrowRight, Trash2, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
+import { jsPDF } from "jspdf";
 
 export const Route = createFileRoute("/_app/timetable/")({
   component: TimetableListPage,
 });
+
 
 function TimetableListPage() {
   const { data, update } = useStore();
