@@ -324,6 +324,7 @@ function ClassesSection() {
             columns={[
               { key: "name", label: "Name", required: true, example: "12th Science" },
               { key: "shortName", label: "Short Name", example: "12S" },
+              { key: "section", label: "Section (N-3 / 4-5 / 6-8 / 9-12)", example: "9-12" },
               { key: "classTeacher", label: "Class Teacher", example: "Jane Doe" },
             ]}
             onImport={bulkImport}
@@ -335,6 +336,15 @@ function ClassesSection() {
               <Label>Class Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., 12th Science" />
               {name && <p className="mt-1 text-xs text-muted-foreground">Short: <b>{shortNameOf(name)}</b></p>}
+            </div>
+            <div>
+              <Label>Section</Label>
+              <Select value={section} onValueChange={(v) => setSection(v as SectionKey)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SECTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Class Teacher</Label>
@@ -357,7 +367,7 @@ function ClassesSection() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Class</TableHead><TableHead>Short</TableHead><TableHead>Class Teacher</TableHead><TableHead></TableHead></TableRow>
+                <TableRow><TableHead>Class</TableHead><TableHead>Short</TableHead><TableHead>Section</TableHead><TableHead>Class Teacher</TableHead><TableHead></TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {data.classes.map((c) => {
@@ -366,6 +376,7 @@ function ClassesSection() {
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell><Badge variant="secondary">{c.shortName}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{c.section ?? "9-12"}</Badge></TableCell>
                       <TableCell>{teacher ? teacher.name : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell><Button size="icon" variant="ghost" onClick={() => update((d) => ({ ...d, classes: d.classes.filter((x) => x.id !== c.id) }))}><Trash2 className="h-4 w-4" /></Button></TableCell>
                     </TableRow>
