@@ -91,35 +91,32 @@ function WizardPage() {
     }));
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/timetable" })}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back
-          </Button>
-          <div className="flex-1">
-            <Input
-              value={tt.name}
-              onChange={(e) => rename(e.target.value)}
-              className="h-10 max-w-md border-transparent bg-transparent px-1 text-2xl font-semibold shadow-none focus-visible:border-input focus-visible:bg-background"
-            />
-            <p className="text-sm text-muted-foreground">Design your weekly schedule</p>
-          </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/timetable" })}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back
+        </Button>
+        <div className="flex-1">
+          <Input
+            value={tt.name}
+            onChange={(e) => rename(e.target.value)}
+            className="h-10 max-w-md border-transparent bg-transparent px-1 text-2xl font-semibold shadow-none focus-visible:border-input focus-visible:bg-background"
+          />
+          <p className="text-sm text-muted-foreground">Design your weekly schedule</p>
         </div>
-
-        {issues.length > 0 && <IssuesBanner issues={issues} />}
-
-        <BellSchedule id={id} />
-        <LessonsStep id={id} />
-        <GenerateStep id={id} />
       </div>
 
-      <div className="space-y-6 lg:sticky lg:top-16 lg:self-start">
-        <TimetableChat tt={tt} />
-      </div>
+      {issues.length > 0 && <IssuesBanner issues={issues} />}
+
+      <BellSchedule id={id} />
+      <LessonsStep id={id} />
+      <GenerateStep id={id} />
+
+      <TimetableChat tt={tt} />
     </div>
   );
 }
+
 
 function IssuesBanner({ issues }: { issues: ReturnType<typeof validateGenerated> }) {
   const [open, setOpen] = useState(false);
