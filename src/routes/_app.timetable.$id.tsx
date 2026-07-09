@@ -279,11 +279,7 @@ function GenerateStep({ id }: { id: string }) {
     }));
   };
 
-  const subjectShort = (sid: string) => data.subjects.find((s) => s.id === sid)?.shortName ?? "—";
-  const teacherShort = (tid: string) => data.staff.find((s) => s.id === tid)?.shortName ?? "—";
-
-  const [activeSection, setActiveSection] = useState<SectionKey>("9-12");
-  const sectionClasses = data.classes.filter((c) => sectionOf(c.section) === activeSection);
+  const [editMode, setEditMode] = useState(false);
 
   return (
     <Card>
@@ -292,9 +288,19 @@ function GenerateStep({ id }: { id: string }) {
           <CardTitle className="text-base">Create Timetable</CardTitle>
           <CardDescription>Generate the schedule from your bell schedule and lessons.</CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {tt.generated && (
-            <Button variant="outline" size="sm" onClick={clear}>Clear</Button>
+            <>
+              <Button
+                variant={editMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setEditMode((e) => !e)}
+              >
+                <Pencil className="mr-1 h-4 w-4" />
+                {editMode ? "Done editing" : "Edit"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={clear}>Clear</Button>
+            </>
           )}
           <Button onClick={generate} disabled={!canGenerate}>
             <Check className="mr-1 h-4 w-4" /> {tt.generated ? "Regenerate" : "Create Timetable"}
@@ -309,84 +315,21 @@ function GenerateStep({ id }: { id: string }) {
         )}
 
         {tt.generated && (
-          <Tabs value={activeSection} onValueChange={(v) => setActiveSection(v as SectionKey)}>
-            <TabsList>
-              {SECTIONS.map((s) => (
-                <TabsTrigger key={s} value={s}>{s}</TabsTrigger>
-              ))}
-            </TabsList>
-            {SECTIONS.map((sec) => (
-              <TabsContent key={sec} value={sec} className="mt-4">
-                {(() => {
-                  const g = tt.generated!;
-                  const classesWith = sectionClasses.filter((c) => g.grid[c.id]?.some((day) => day.some((p) => p.length > 0)));
-                  if (classesWith.length === 0) {
-                    return <p className="text-sm text-muted-foreground">No classes in this section have a schedule yet.</p>;
-                  }
-                  return (
-                    <div className="space-y-6">
-                      {classesWith.map((c) => (
-                        <div key={c.id} className="space-y-2">
-                          <div className="text-sm font-semibold">{c.name}</div>
-                          <div className="overflow-x-auto rounded-lg border">
-                            <table className="w-full min-w-[640px] text-xs">
-                              <thead className="bg-muted/50">
-                                <tr>
-                                  <th className="p-2 text-left">Day</th>
-                                  {tt.assembly && <th className="p-2 text-left text-primary">{tt.assembly.name}</th>}
-                                  {g.periodNames.map((pn, i) => (
-                                    <th key={i} className="p-2 text-left">{pn}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {g.days.map((day, di) => (
-                                  <tr key={day} className="border-t">
-                                    <td className="p-2 font-medium">{day}</td>
-                                    {tt.assembly && (
-                                      <td className="p-1 align-top">
-                                        <div className="rounded bg-accent/30 p-1.5 text-[10px] leading-tight text-foreground/70">
-                                          {tt.assembly.start}–{tt.assembly.end}
-                                        </div>
-                                      </td>
-                                    )}
-                                    {g.grid[c.id][di].map((cells, pi) => (
-                                      <td key={pi} className="p-1 align-top">
-                                        {cells.length === 0 ? (
-                                          <div className="h-full min-h-[40px] rounded bg-muted/30" />
-                                        ) : (
-                                          <div className="space-y-1">
-                                            {cells.map((cell, ci) => (
-                                              <div key={ci} className="rounded bg-primary/10 p-1.5 leading-tight text-primary">
-                                                {cell.groupLabel && (
-                                                  <div className="text-[10px] font-semibold opacity-80">{cell.groupLabel}</div>
-                                                )}
-                                                <div className="font-semibold">{subjectShort(cell.subjectId)}</div>
-                                                <div className="text-[10px] opacity-80">{teacherShort(cell.teacherId)}</div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </TabsContent>
-            ))}
-          </Tabs>
+          <>
+            {editMode && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+                Edit mode — drag any period onto another to move or swap. If the drop causes the same
+                teacher to appear in two classes at once, you'll be asked whether to combine them.
+              </div>
+            )}
+            <TimetableGrid tt={tt} editable={editMode} />
+          </>
         )}
       </CardContent>
     </Card>
   );
 }
+
 
 function AssemblyRow({ id }: { id: string }) {
   const { data, update } = useStore();
