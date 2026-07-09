@@ -1,18 +1,29 @@
-import type { GeneratedGrid, GeneratedCell, Timetable, ClassItem } from "./store";
+import type { GeneratedGrid, Timetable, ClassItem } from "./store";
 
 export type Coord = { classId: string; day: number; period: number };
 
+export type MoveResult =
+  | { ok: true; grid: GeneratedGrid; ripple?: string }
+  | { ok: false; error: string }
+  | {
+      ok: false;
+      needsCombineConfirm: true;
+      conflictClassIds: string[];
+      teacherIds: string[];
+    };
+
 /**
  * Move a single cell (single, non-split subject) from source to destination.
- * Handles cross-class ripple: if the destination slot already has this teacher
- * busy in another class, we swap that other class's cell into the source slot.
- * Returns a new grid, or an error string if impossible.
+ * If moving would place the same teacher in another class at the same slot,
+ * the caller can retry with { combine: true } to explicitly co-schedule
+ * both classes (shared teacher across multiple classes at the same time).
  */
 export function moveCell(
   grid: GeneratedGrid,
   src: Coord,
-  dst: Coord
-): { ok: true; grid: GeneratedGrid; ripple?: string } | { ok: false; error: string } {
+  dst: Coord,
+  opts: { combine?: boolean } = {}
+): MoveResult {
   if (src.classId === dst.classId && src.day === dst.day && src.period === dst.period) {
     return { ok: true, grid };
   }
@@ -30,42 +41,61 @@ export function moveCell(
 
   const dstCells = next[dst.classId][dst.day][dst.period];
 
-  // Check same-class collision on dst
-  if (dstCells.length > 0 && dst.classId === src.classId) {
-    // Swap within same class
+  // Same-class swap
+  if (dst.classId === src.classId) {
     next[src.classId][src.day][src.period] = dstCells;
     next[dst.classId][dst.day][dst.period] = moving;
     return { ok: true, grid: next };
   }
 
-  // Cross-class: check teacher conflicts at destination (excluding this dst cell)
+  // Cross-class: detect teacher clash with any *other* class at dst
   const movingTeachers = moving.map((c) => c.teacherId).filter(Boolean);
-  let ripple: string | undefined;
+  const conflictClasses: string[] = [];
+  const conflictTeachers = new Set<string>();
 
   for (const cid of Object.keys(next)) {
     if (cid === dst.classId) continue;
+    if (cid === src.classId) continue;
     const cell = next[cid][dst.day][dst.period];
     for (const c of cell) {
       if (movingTeachers.includes(c.teacherId)) {
-        // Teacher clash. Try to move that other class's cell into src slot (which is now empty).
-        if (next[cid][src.day][src.period].length === 0 && src.classId !== cid) {
-          next[cid][src.day][src.period] = next[cid][dst.day][dst.period];
-          next[cid][dst.day][dst.period] = [];
-          ripple = `Swapped ${cid}'s lesson to keep teacher free`;
-        } else {
-          return { ok: false, error: "Teacher clash — cannot auto-resolve" };
-        }
+        conflictClasses.push(cid);
+        conflictTeachers.add(c.teacherId);
       }
     }
   }
 
-  // Same-class swap already handled above; for cross-class also swap destination content back to source
+  if (conflictClasses.length > 0 && !opts.combine) {
+    return {
+      ok: false,
+      needsCombineConfirm: true,
+      conflictClassIds: Array.from(new Set(conflictClasses)),
+      teacherIds: Array.from(conflictTeachers),
+    };
+  }
+
+  // If combine requested: tag every affected cell (moving + all conflicts) with a shared id
+  if (opts.combine && conflictClasses.length > 0) {
+    const combinedId = `cb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    for (const c of moving) c.combinedId = combinedId;
+    for (const cid of conflictClasses) {
+      for (const c of next[cid][dst.day][dst.period]) {
+        if (movingTeachers.includes(c.teacherId)) c.combinedId = combinedId;
+      }
+    }
+  }
+
+  // Swap destination content back to source (if any)
   if (dstCells.length > 0) {
     next[src.classId][src.day][src.period] = dstCells;
   }
   next[dst.classId][dst.day][dst.period] = moving;
 
-  return { ok: true, grid: next, ripple };
+  return {
+    ok: true,
+    grid: next,
+    ripple: opts.combine ? `Combined with ${conflictClasses.length} other class${conflictClasses.length === 1 ? "" : "es"}` : undefined,
+  };
 }
 
 export type ValidationIssue = {
@@ -81,7 +111,7 @@ export function validateGenerated(tt: Timetable, classes: ClassItem[]): Validati
   if (!g) return issues;
 
   const activeClassIds = classes.map((c) => c.id).filter((id) => g.grid[id]);
-  // Blank cells
+
   for (const cid of activeClassIds) {
     const cls = classes.find((c) => c.id === cid);
     if (!cls) continue;
@@ -92,7 +122,7 @@ export function validateGenerated(tt: Timetable, classes: ClassItem[]): Validati
           issues.push({
             kind: "blank",
             message: `${cls.name} · ${g.days[d]} · ${g.periodNames[p]} is empty`,
-            suggestion: "Add a lesson or use AI chat to suggest a fill.",
+            suggestion: "Add a lesson or drag one in from another slot.",
             coord: { classId: cid, day: d, period: p },
           });
         }
@@ -100,23 +130,25 @@ export function validateGenerated(tt: Timetable, classes: ClassItem[]): Validati
     }
   }
 
-  // Teacher clashes
   for (let d = 0; d < g.days.length; d++) {
     for (let p = 0; p < g.periodNames.length; p++) {
-      const seenTeachers = new Map<string, string>(); // teacherId -> classId
+      const seenTeachers = new Map<string, { classId: string; combinedId?: string }>();
       for (const cid of activeClassIds) {
         const cell = g.grid[cid][d][p];
         for (const c of cell) {
           if (!c.teacherId) continue;
-          if (seenTeachers.has(c.teacherId)) {
+          const prev = seenTeachers.get(c.teacherId);
+          if (prev) {
+            // Skip if both cells are marked as combined with the same id
+            if (prev.combinedId && c.combinedId && prev.combinedId === c.combinedId) continue;
             issues.push({
               kind: "teacher_clash",
               message: `Teacher double-booked on ${g.days[d]} · ${g.periodNames[p]}`,
-              suggestion: "Drag one of the periods to a free slot for that teacher.",
+              suggestion: "Drag one to a free slot, or combine the classes if intentional.",
               coord: { classId: cid, day: d, period: p },
             });
           } else {
-            seenTeachers.set(c.teacherId, cid);
+            seenTeachers.set(c.teacherId, { classId: cid, combinedId: c.combinedId });
           }
         }
       }
