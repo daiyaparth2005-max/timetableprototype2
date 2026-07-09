@@ -268,11 +268,18 @@ function ClassesSection() {
   const formRef = useRef<HTMLFormElement>(null);
   const [name, setName] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [section, setSection] = useState<SectionKey>("9-12");
 
   const add = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("Class name required");
-    const c: ClassItem = { id: uid(), name: name.trim(), shortName: shortNameOf(name), classTeacherId: teacherId };
+    const c: ClassItem = {
+      id: uid(),
+      name: name.trim(),
+      shortName: shortNameOf(name),
+      classTeacherId: teacherId,
+      section,
+    };
     update((d) => ({ ...d, classes: [...d.classes, c] }));
     setName(""); setTeacherId("");
     toast.success(`${c.name} added`);
@@ -283,13 +290,19 @@ function ClassesSection() {
     const valid: ClassItem[] = [];
     for (const r of rows) {
       if (!r.name) { skipped++; continue; }
-      // Resolve teacher by name (case-insensitive)
       let tId = "";
       if (r.classTeacher) {
         const t = data.staff.find((s) => s.name.trim().toLowerCase() === r.classTeacher.trim().toLowerCase());
         if (t) tId = t.id;
       }
-      valid.push({ id: uid(), name: r.name, shortName: r.shortName || shortNameOf(r.name), classTeacherId: tId });
+      const sec = (SECTIONS as readonly string[]).includes(r.section) ? (r.section as SectionKey) : "9-12";
+      valid.push({
+        id: uid(),
+        name: r.name,
+        shortName: r.shortName || shortNameOf(r.name),
+        classTeacherId: tId,
+        section: sec,
+      });
       added++;
     }
     update((d) => ({ ...d, classes: [...d.classes, ...valid] }));
