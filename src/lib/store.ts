@@ -46,7 +46,7 @@ export type Lesson = {
   frequency: number;
 };
 
-export type GeneratedCell = { subjectId: string; teacherId: string; groupLabel?: string };
+export type GeneratedCell = { subjectId: string; teacherId: string; groupLabel?: string; combinedId?: string };
 export type GeneratedGrid = Record<string, GeneratedCell[][][]>;
 
 export type Assembly = { name: string; start: string; end: string };
