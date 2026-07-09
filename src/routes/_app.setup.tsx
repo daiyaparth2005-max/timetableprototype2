@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { useStore, shortNameOf, uid, type Staff, type Subject, type ClassItem } from "@/lib/store";
+import { useStore, shortNameOf, uid, SECTIONS, type Staff, type Subject, type ClassItem, type SectionKey } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
