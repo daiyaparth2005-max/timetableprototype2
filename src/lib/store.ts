@@ -15,7 +15,16 @@ export type Staff = {
 
 export type Subject = { id: string; name: string; shortName: string };
 
-export type ClassItem = { id: string; name: string; shortName: string; classTeacherId: string };
+export const SECTIONS = ["N-3", "4-5", "6-8", "9-12"] as const;
+export type SectionKey = typeof SECTIONS[number];
+
+export type ClassItem = {
+  id: string;
+  name: string;
+  shortName: string;
+  classTeacherId: string;
+  section?: SectionKey;
+};
 
 export type Period = {
   id: string;
