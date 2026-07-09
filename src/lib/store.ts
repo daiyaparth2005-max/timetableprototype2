@@ -15,7 +15,16 @@ export type Staff = {
 
 export type Subject = { id: string; name: string; shortName: string };
 
-export type ClassItem = { id: string; name: string; shortName: string; classTeacherId: string };
+export const SECTIONS = ["N-3", "4-5", "6-8", "9-12"] as const;
+export type SectionKey = typeof SECTIONS[number];
+
+export type ClassItem = {
+  id: string;
+  name: string;
+  shortName: string;
+  classTeacherId: string;
+  section?: SectionKey;
+};
 
 export type Period = {
   id: string;
@@ -40,6 +49,14 @@ export type Lesson = {
 export type GeneratedCell = { subjectId: string; teacherId: string; groupLabel?: string };
 export type GeneratedGrid = Record<string, GeneratedCell[][][]>;
 
+export type Assembly = { name: string; start: string; end: string };
+
+export type Preference = {
+  id: string;
+  text: string;
+  createdAt: number;
+};
+
 export type Timetable = {
   id: string;
   name: string;
@@ -47,6 +64,8 @@ export type Timetable = {
   days: string[];
   periods: Period[];
   lessons: Lesson[];
+  assembly?: Assembly | null;
+  preferences?: Preference[];
   generated?: { grid: GeneratedGrid; days: string[]; periodNames: string[]; createdAt: number } | null;
 };
 

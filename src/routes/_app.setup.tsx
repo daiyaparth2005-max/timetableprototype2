@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { useStore, shortNameOf, uid, type Staff, type Subject, type ClassItem } from "@/lib/store";
+import { useStore, shortNameOf, uid, SECTIONS, type Staff, type Subject, type ClassItem, type SectionKey } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -268,11 +268,18 @@ function ClassesSection() {
   const formRef = useRef<HTMLFormElement>(null);
   const [name, setName] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [section, setSection] = useState<SectionKey>("9-12");
 
   const add = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("Class name required");
-    const c: ClassItem = { id: uid(), name: name.trim(), shortName: shortNameOf(name), classTeacherId: teacherId };
+    const c: ClassItem = {
+      id: uid(),
+      name: name.trim(),
+      shortName: shortNameOf(name),
+      classTeacherId: teacherId,
+      section,
+    };
     update((d) => ({ ...d, classes: [...d.classes, c] }));
     setName(""); setTeacherId("");
     toast.success(`${c.name} added`);
@@ -283,13 +290,19 @@ function ClassesSection() {
     const valid: ClassItem[] = [];
     for (const r of rows) {
       if (!r.name) { skipped++; continue; }
-      // Resolve teacher by name (case-insensitive)
       let tId = "";
       if (r.classTeacher) {
         const t = data.staff.find((s) => s.name.trim().toLowerCase() === r.classTeacher.trim().toLowerCase());
         if (t) tId = t.id;
       }
-      valid.push({ id: uid(), name: r.name, shortName: r.shortName || shortNameOf(r.name), classTeacherId: tId });
+      const sec = (SECTIONS as readonly string[]).includes(r.section) ? (r.section as SectionKey) : "9-12";
+      valid.push({
+        id: uid(),
+        name: r.name,
+        shortName: r.shortName || shortNameOf(r.name),
+        classTeacherId: tId,
+        section: sec,
+      });
       added++;
     }
     update((d) => ({ ...d, classes: [...d.classes, ...valid] }));
@@ -311,6 +324,7 @@ function ClassesSection() {
             columns={[
               { key: "name", label: "Name", required: true, example: "12th Science" },
               { key: "shortName", label: "Short Name", example: "12S" },
+              { key: "section", label: "Section (N-3 / 4-5 / 6-8 / 9-12)", example: "9-12" },
               { key: "classTeacher", label: "Class Teacher", example: "Jane Doe" },
             ]}
             onImport={bulkImport}
@@ -322,6 +336,15 @@ function ClassesSection() {
               <Label>Class Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., 12th Science" />
               {name && <p className="mt-1 text-xs text-muted-foreground">Short: <b>{shortNameOf(name)}</b></p>}
+            </div>
+            <div>
+              <Label>Section</Label>
+              <Select value={section} onValueChange={(v) => setSection(v as SectionKey)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SECTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Class Teacher</Label>
@@ -344,7 +367,7 @@ function ClassesSection() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Class</TableHead><TableHead>Short</TableHead><TableHead>Class Teacher</TableHead><TableHead></TableHead></TableRow>
+                <TableRow><TableHead>Class</TableHead><TableHead>Short</TableHead><TableHead>Section</TableHead><TableHead>Class Teacher</TableHead><TableHead></TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {data.classes.map((c) => {
@@ -353,6 +376,7 @@ function ClassesSection() {
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell><Badge variant="secondary">{c.shortName}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{c.section ?? "9-12"}</Badge></TableCell>
                       <TableCell>{teacher ? teacher.name : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell><Button size="icon" variant="ghost" onClick={() => update((d) => ({ ...d, classes: d.classes.filter((x) => x.id !== c.id) }))}><Trash2 className="h-4 w-4" /></Button></TableCell>
                     </TableRow>

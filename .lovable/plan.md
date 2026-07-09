@@ -1,68 +1,67 @@
-## Problem
+## Scope
 
-Right now all workspace data (staff, subjects, classes, timetables) is saved in the browser's `localStorage` under keys like `tm_data_space1`. That storage is **per-device, per-browser** — so logging in as `test 1` on a different phone/laptop starts from an empty slate, and edits made on device A never reach device B.
+Full redesign + 7 features. Given the size, I'll ship it in one coherent pass but you may need follow-up turns to refine details after you try it out. Nothing existing (staff, subjects, classes, saved timetables) will be lost — the data model is extended, not replaced.
 
-Also, the current "login" is fake: `test 1 / test 1` is checked against a hardcoded map in `src/lib/auth.tsx` and never talks to any server, so there is no shared identity behind the two spaces.
+## 1. Redesign (Sage & Cream, Urbanist/Epilogue)
 
-## Goal
+- Update `src/styles.css` design tokens:
+  - `--background` warm cream `#f5f0e8`, `--foreground` deep ink, `--primary` muted sage `#7d9b76`, `--secondary` `#dce5d4`, `--muted` `#f0ebe3`, `--border` soft warm gray, `--accent` `#a8c0a0`, subtle shadows.
+- Install `@fontsource/urbanist` + `@fontsource/epilogue`; register in `__root.tsx`; set `--font-sans: Epilogue`, `--font-display: Urbanist`; apply display font to headings via a small utility.
+- Sidebar, cards, buttons, inputs, tables get consistent rounded-lg, generous spacing, hairline borders, no heavy shadows.
+- Login page refresh to match.
 
-Make `test 1` and `test 2` behave like real shared accounts — whichever device signs in as `test 1` sees the exact same staff / subjects / classes / timetables that any other device signed in as `test 1` has saved (like Gmail).
+## 2. Feature changes
 
-## Approach
+**(1) Four sections per timetable — N-3, 4-5, 6-8, 9-12**
+- Add `section` field to `ClassItem` (`"N-3" | "4-5" | "6-8" | "9-12"`), default `"9-12"` for existing classes.
+- Each `Lesson` already ties to a class → section derived from class. In the timetable editor and preview, add a tabbed switcher; each tab shows only classes/lessons/grid for that section. Bell schedule (periods, days) is shared across tabs, as chosen.
+- PDF export groups pages by section.
 
-Move the two spaces off `localStorage` and onto **Lovable Cloud** (managed Postgres + Auth), keeping the same two-account UX.
+**(2) Search inside subject/faculty pickers in Lessons**
+- Replace plain `<Select>` in the lesson editor with `Command`-based combobox (shadcn `cmdk`) with type-to-filter.
 
-### 1. Enable Lovable Cloud
-Turn on Cloud so we get a real database + auth. No external accounts needed.
+**(3) Keep class selected after "Add Lesson"**
+- Reset only subject/teacher/split/groups/frequency; leave `classId` intact.
 
-### 2. Seed the two shared accounts
-Create exactly two real auth users up-front, mapped to the existing credentials:
-- `test1@timetablemaster.local` / password `test 1` → Space 1
-- `test2@timetablemaster.local` / password `test 2` → Space 2
+**(4) Assembly slot in Bell Schedule**
+- Add optional `assembly: { name, start, end } | null` on `Timetable`.
+- In bell schedule UI, add a small "+ Add assembly" row above period 1 with time inputs; renders in preview and PDF as a pre-period row.
 
-The login screen keeps showing "test 1 / test 1" and "test 2 / test 2". Under the hood it translates that to the real email + password and signs into Cloud. No signup UI — only these two fixed accounts exist.
+**(5) AI chat assistant in the editor**
+- Floating panel on the right of the timetable editor.
+- Backed by a `createServerFn` calling Lovable AI Gateway (`google/gemini-3-flash-preview`) via `@ai-sdk/openai-compatible`.
+- The function receives the current timetable snapshot + user message and returns either a suggestion or a proposed patch (JSON diff of lessons/periods/generated grid). User clicks "Apply" to accept.
+- Tool set: `move_period`, `swap_periods`, `set_preference` (e.g. "put CUET at last periods for grade 12"), `suggest_layout`. Preferences persist on the timetable so generator honors them.
+- Generator update: add a soft-constraint pass reading `preferences` (e.g. subject → preferred period range for a given class/section).
 
-### 3. Database schema (per-space rows)
-One table per data type, each row tagged with `space_id` (`'space1'` or `'space2'`):
-- `staff`, `subjects`, `classes`, `timetables`
+**(6) Drag-and-drop editing with cross-class conflict fixing**
+- In preview, cells become draggable (`@dnd-kit`). Single-cell drag, plus shift-click multi-select then drag.
+- On drop: validate — teacher clash, class double-booking, subject-daily-cap. If teacher was also placed in another class at the destination slot, auto-swap them (the other class gets the vacated slot). Show a toast summarizing the ripple.
+- Multi-select drop tries to preserve relative offset; if a swap chain is impossible, the drop is rejected with a reason.
 
-`timetables` stores `days`, `periods`, `lessons`, and the generated `grid` as JSONB so the wizard keeps working with minimal changes.
+**(7) Validation notifications + suggestions**
+- Add a `validate(timetable)` pass: flags blank cells, teacher clashes, over-capacity days, orphan lessons.
+- Non-blocking banner in the editor + a "Fix" popover per issue with a concrete suggested action (e.g. "Move MATH from Mon-P4 to Wed-P2 — teacher free, class free").
 
-RLS: any authenticated user can read/write rows for their own space. Since both real users are trusted shared accounts, a signed-in `test 1` session sees all `space1` rows regardless of device.
+## Technical
 
-### 4. Replace the store
-Rewrite `src/lib/store.ts` so instead of reading/writing `localStorage`, it:
-- loads all four tables for the current `space_id` from Cloud on login,
-- keeps the same `useStore()` API (`data`, `update`, `setData`) so Setup / Dashboard / Wizard / Preview / Teacher pages don't need rewrites,
-- persists every change back to Cloud (upsert on edit, delete on remove).
+- New/updated files (approx):
+  - `src/styles.css` (theme), `src/routes/__root.tsx` (fonts).
+  - `src/lib/store.ts` — extend `ClassItem` (section), `Timetable` (assembly, preferences), `GeneratedGrid` stays the same shape.
+  - `src/lib/timetable-validate.ts` — new.
+  - `src/lib/timetable-mutate.ts` — new, drag/swap/ripple logic.
+  - `src/lib/ai-gateway.server.ts` + `src/lib/timetable-ai.functions.ts` — AI chat serverFn.
+  - `src/components/ClassSectionTabs.tsx`, `SubjectCombobox.tsx`, `TeacherCombobox.tsx`, `AssemblyEditor.tsx`, `TimetableChat.tsx`, `ValidationBanner.tsx`, `DraggableCell.tsx`.
+  - `src/routes/_app.timetable.$id.tsx` and `_app.timetable.$id.preview.tsx` — integrate all of the above.
+  - `src/routes/_app.setup.tsx` — add "Section" field for classes (single-add + bulk template).
+- Dependencies to add: `@fontsource/urbanist`, `@fontsource/epilogue`, `@dnd-kit/core`, `@dnd-kit/sortable`, `ai`, `@ai-sdk/openai-compatible`, `zod` (if not already).
+- Migration: existing classes get `section = "9-12"` on first read; existing timetables get `assembly = null`, `preferences = []`. Non-destructive.
+- Secrets: `LOVABLE_API_KEY` is auto-provisioned server-side; nothing for you to configure.
 
-### 5. Rewrite auth
-`src/lib/auth.tsx` becomes a thin wrapper around Supabase Auth: `login("test 1","test 1")` → `signInWithPassword` with the mapped email; `logout()` → `signOut`; `user` derived from the session, with `space_id` inferred from which of the two emails is signed in.
+## Out of scope for this pass
 
-### 6. Migration of existing local data
-Existing browser `localStorage` data (what you've entered so far) is device-local and won't automatically appear in the new cloud store. Options:
-- **(A) Fresh start** — cloud starts empty; re-enter data once and it syncs everywhere after that. Simplest.
-- **(B) One-time push** — on first login after the switch, if `localStorage` has data for that space and cloud is empty, upload it. Preserves what you already typed on this device.
+- Persisting AI chat transcripts across reloads (kept in-memory per session).
+- Undo/redo history for drag operations beyond a single "Undo" toast action.
+- Reordering days.
 
-I'll implement **(B)** so you don't lose your current setup.
-
-## Result
-
-After this:
-- Log in as `test 1` on your laptop → add a teacher → log in as `test 1` on your phone → the teacher is already there.
-- `test 1` and `test 2` remain fully isolated from each other.
-- Data survives cache clears, new browsers, new devices — anything.
-
-## Files touched
-
-- **Enable Lovable Cloud** (adds Supabase integration files)
-- **New migration**: create `staff`, `subjects`, `classes`, `timetables` tables + RLS + GRANTs
-- **Seed**: create the two auth users (`test1@…` / `test2@…`)
-- `src/lib/auth.tsx` — swap fake auth for Supabase auth, keep same `useAuth()` API
-- `src/lib/store.ts` — swap localStorage for Cloud-backed store, keep same `useStore()` API
-- `src/routes/login.tsx` — translate "test 1" → email under the hood; keep UI identical
-- No changes needed to Setup / Dashboard / Wizard / Preview / Teacher pages (they use `useStore`)
-
-## One quick confirmation
-
-Do you want me to keep the visible login exactly as **"test 1 / test 1"** and **"test 2 / test 2"** (I map to hidden emails internally), or switch the UI to real emails? I'll go with the first — same UI as today — unless you say otherwise.
+Reply "go" to build, or tell me what to change.
