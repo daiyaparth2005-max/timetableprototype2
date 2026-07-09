@@ -49,6 +49,14 @@ export type Lesson = {
 export type GeneratedCell = { subjectId: string; teacherId: string; groupLabel?: string };
 export type GeneratedGrid = Record<string, GeneratedCell[][][]>;
 
+export type Assembly = { name: string; start: string; end: string };
+
+export type Preference = {
+  id: string;
+  text: string;
+  createdAt: number;
+};
+
 export type Timetable = {
   id: string;
   name: string;
@@ -56,6 +64,8 @@ export type Timetable = {
   days: string[];
   periods: Period[];
   lessons: Lesson[];
+  assembly?: Assembly | null;
+  preferences?: Preference[];
   generated?: { grid: GeneratedGrid; days: string[]; periodNames: string[]; createdAt: number } | null;
 };
 
