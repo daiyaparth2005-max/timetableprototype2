@@ -3,11 +3,13 @@ import { useState } from "react";
 import {
   useStore,
   uid,
+  SECTIONS,
   type Period,
   type Lesson,
   type LessonGroup,
   type GeneratedGrid,
   type GeneratedCell,
+  type SectionKey,
   type Assembly,
 } from "@/lib/store";
 
