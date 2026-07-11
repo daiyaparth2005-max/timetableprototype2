@@ -94,7 +94,9 @@ export function TimetableGrid({
     [data.classes, activeSection]
   );
   const classesWith = g
-    ? classesForSection.filter((c) => g.grid[c.id]?.some((day) => day.some((p) => p.length > 0)))
+    ? classesForSection.filter(
+        (c) => editable || g.grid[c.id]?.some((day) => day.some((p) => p.length > 0))
+      )
     : [];
 
   if (!g) {
