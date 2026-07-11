@@ -242,6 +242,8 @@ export function TimetableGrid({
         gridBody
       )}
 
+      <PeriodEditDialog tt={tt} coord={editingCoord} onClose={() => setEditingCoord(null)} />
+
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -292,10 +294,12 @@ function CellSlot({
   coord,
   editable,
   children,
+  onEdit,
 }: {
   coord: Coord;
   editable: boolean;
   children: React.ReactNode;
+  onEdit?: () => void;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: coordId(coord), disabled: !editable });
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
@@ -319,7 +323,21 @@ function CellSlot({
             isDragging ? "opacity-40" : ""
           }`}
         >
-          <GripVertical className="pointer-events-none absolute right-0.5 top-0.5 h-3 w-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100" />
+          <GripVertical className="pointer-events-none absolute left-0.5 top-0.5 h-3 w-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100" />
+          {onEdit && (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="absolute right-0.5 top-0.5 z-10 rounded bg-background/80 p-0.5 opacity-0 shadow-sm ring-1 ring-border transition-opacity hover:bg-background group-hover:opacity-100"
+              aria-label="Edit period"
+            >
+              <Pencil className="h-3 w-3 text-primary" />
+            </button>
+          )}
           {children}
         </div>
       ) : (
@@ -328,3 +346,4 @@ function CellSlot({
     </td>
   );
 }
+
