@@ -15,7 +15,7 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Settings, LogOut, CalendarClock } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, CalendarClock, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_app")({
