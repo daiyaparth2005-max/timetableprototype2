@@ -37,13 +37,32 @@ function AppLayout() {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar userName={user.name} onLogout={() => { logout(); navigate({ to: "/login" }); }} />
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
+          <div className="relative overflow-hidden border-b bg-gradient-to-r from-primary/15 via-fuchsia-500/15 to-cyan-500/15">
+            <div className="flex whitespace-nowrap py-1.5 text-xs font-medium tracking-wide animate-marquee">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="flex shrink-0 items-center gap-8 px-6">
+                  <span>✨ TimetableMaster</span>
+                  <span className="text-fuchsia-600">◆ Drag & drop periods</span>
+                  <span className="text-cyan-600">✦ Click any slot to edit</span>
+                  <span className="text-emerald-600">● AI co-pilot below</span>
+                  <span className="text-amber-600">★ Cross-device sync</span>
+                  <span className="text-primary">◇ Colorful schedules</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/70 px-4 backdrop-blur-lg">
             <SidebarTrigger />
             <div className="flex items-center gap-2 font-semibold">
-              <CalendarClock className="h-5 w-5 text-primary" />
-              TimetableMaster
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-vibrant text-white shadow-sm">
+                <CalendarClock className="h-4 w-4" />
+              </div>
+              <span className="font-display text-gradient-rainbow">TimetableMaster</span>
             </div>
-            <div className="ml-auto text-sm text-muted-foreground">{user.name}</div>
+            <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="hidden sm:inline">{user.name}</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-ring" />
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-8">
             <Outlet />
