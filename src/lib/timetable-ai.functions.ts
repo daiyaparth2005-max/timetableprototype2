@@ -54,11 +54,8 @@ Lessons configured: ${data.context.lessons.length}
 Existing preferences: ${data.context.preferences.map((p) => p.text).join(" | ") || "(none)"}
 Timetable generated: ${data.context.hasGenerated ? "yes" : "no"}`;
 
-    const messages = [
-      { role: "system" as const, content: sys },
-      ...data.messages.map((m) => ({ role: m.role, content: m.content })),
-    ];
+    const messages = data.messages.map((m) => ({ role: m.role, content: m.content }));
 
-    const { text } = await generateText({ model, messages });
+    const { text } = await generateText({ model, system: sys, messages });
     return { text };
   });
