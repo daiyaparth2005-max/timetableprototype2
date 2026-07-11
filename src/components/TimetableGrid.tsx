@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore, SECTIONS, type Timetable, type SectionKey } from "@/lib/store";
 import { moveCell, type Coord } from "@/lib/timetable-mutate";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Pencil } from "lucide-react";
+import { PeriodEditDialog } from "@/components/PeriodEditDialog";
 
 function sectionOf(s?: SectionKey): SectionKey {
   return s ?? "9-12";
