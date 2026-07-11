@@ -59,6 +59,7 @@ function AppSidebar({ userName, onLogout }: { userName: string; onLogout: () => 
   const items = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Setup", url: "/setup", icon: Settings },
+    { title: "Substitution", url: "/substitution", icon: UserX },
   ];
 
   return (
