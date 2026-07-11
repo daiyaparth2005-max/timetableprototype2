@@ -200,8 +200,25 @@
   50% { background-position: 100% 50%; }
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 oklch(0.72 0.18 300 / 0.5); }
+  70% { box-shadow: 0 0 0 12px oklch(0.72 0.18 300 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.72 0.18 300 / 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
+  .animate-marquee { animation: none !important; }
 }
 
 @utility font-display {
@@ -222,18 +239,23 @@
 @utility bg-accent-amber { background-color: oklch(0.88 0.11 85); }
 @utility accent-teal { color: oklch(0.68 0.12 190); }
 @utility bg-accent-teal { background-color: oklch(0.86 0.09 190); }
+@utility accent-pink { color: oklch(0.70 0.19 340); }
+@utility bg-accent-pink { background-color: oklch(0.87 0.14 340); }
+@utility accent-emerald { color: oklch(0.68 0.15 160); }
+@utility bg-accent-emerald { background-color: oklch(0.86 0.11 160); }
 
 @utility gradient-vibrant {
   background-image: linear-gradient(
     120deg,
-    oklch(0.80 0.16 260),
-    oklch(0.76 0.18 300),
-    oklch(0.78 0.17 230),
-    oklch(0.82 0.15 150),
-    oklch(0.80 0.16 55)
+    oklch(0.78 0.18 260),
+    oklch(0.74 0.20 300),
+    oklch(0.76 0.19 340),
+    oklch(0.80 0.17 55),
+    oklch(0.78 0.18 160),
+    oklch(0.76 0.19 230)
   );
   background-size: 400% 400%;
-  animation: gradient-shift 16s ease infinite;
+  animation: gradient-shift 12s ease infinite;
 }
 
 @utility gradient-blue-purple {
@@ -247,7 +269,33 @@
   animation: gradient-shift 12s ease infinite;
 }
 
+@utility text-gradient-rainbow {
+  background-image: linear-gradient(
+    90deg,
+    oklch(0.60 0.20 260),
+    oklch(0.62 0.22 300),
+    oklch(0.65 0.22 340),
+    oklch(0.68 0.20 40),
+    oklch(0.65 0.20 160),
+    oklch(0.60 0.20 260)
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
 @utility animate-float {
   animation: float-slow 6s ease-in-out infinite;
 }
+
+@utility animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@utility animate-pulse-ring {
+  animation: pulse-ring 2s infinite;
+}
+
 
