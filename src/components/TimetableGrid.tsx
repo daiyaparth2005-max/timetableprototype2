@@ -164,48 +164,60 @@ export function TimetableGrid({
                                 {tt.assembly.start}–{tt.assembly.end}
                               </td>
                             )}
-                            {g.grid[c.id][di].map((cells, pi) => (
-                              <CellSlot
-                                key={pi}
-                                editable={editable}
-                                coord={{ classId: c.id, day: di, period: pi }}
-                              >
-                                {cells.length === 0 ? (
-                                  <div className="min-h-[52px] rounded-md border border-dashed border-muted-foreground/20" />
-                                ) : (
-                                  <div className="space-y-1">
-                                    {cells.map((cell, ci) => (
-                                      <div
-                                        key={ci}
-                                        className={`rounded-md p-2 leading-tight ${
-                                          cell.combinedId
-                                            ? "bg-accent-amber/20 ring-1 ring-accent-amber/40"
-                                            : "bg-primary/10"
-                                        } text-primary`}
-                                        title={subjectName(cell.subjectId)}
-                                      >
-                                        {cell.groupLabel && (
-                                          <div className="text-[10px] font-semibold opacity-80">
-                                            {cell.groupLabel}
+                            {g.grid[c.id][di].map((cells, pi) => {
+                              const coord = { classId: c.id, day: di, period: pi };
+                              return (
+                                <CellSlot
+                                  key={pi}
+                                  editable={editable}
+                                  coord={coord}
+                                  onEdit={() => setEditingCoord(coord)}
+                                >
+                                  {cells.length === 0 ? (
+                                    <div
+                                      className={`min-h-[52px] rounded-md border border-dashed ${
+                                        editable
+                                          ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                                          : "border-muted-foreground/20"
+                                      }`}
+                                      onClick={() => editable && setEditingCoord(coord)}
+                                      role={editable ? "button" : undefined}
+                                    />
+                                  ) : (
+                                    <div className="space-y-1">
+                                      {cells.map((cell, ci) => (
+                                        <div
+                                          key={ci}
+                                          className={`rounded-md p-2 leading-tight ${
+                                            cell.combinedId
+                                              ? "bg-accent-amber/20 ring-1 ring-accent-amber/40"
+                                              : "bg-gradient-to-br from-primary/15 to-fuchsia-500/10"
+                                          } text-primary`}
+                                          title={subjectName(cell.subjectId)}
+                                        >
+                                          {cell.groupLabel && (
+                                            <div className="text-[10px] font-semibold opacity-80">
+                                              {cell.groupLabel}
+                                            </div>
+                                          )}
+                                          <div className="text-sm font-semibold">
+                                            {subjectShort(cell.subjectId)}
                                           </div>
-                                        )}
-                                        <div className="text-sm font-semibold">
-                                          {subjectShort(cell.subjectId)}
-                                        </div>
-                                        <div className="text-[10px] opacity-80">
-                                          {teacherShort(cell.teacherId)}
-                                        </div>
-                                        {cell.combinedId && (
-                                          <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent-amber">
-                                            combined
+                                          <div className="text-[10px] opacity-80">
+                                            {teacherShort(cell.teacherId)}
                                           </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </CellSlot>
-                            ))}
+                                          {cell.combinedId && (
+                                            <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent-amber">
+                                              combined
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </CellSlot>
+                              );
+                            })}
                           </tr>
                         ))}
                       </tbody>
