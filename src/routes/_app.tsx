@@ -85,11 +85,11 @@ function AppSidebar({ userName, onLogout }: { userName: string; onLogout: () => 
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-vibrant text-white shadow-md">
             <CalendarClock className="h-4 w-4" />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold">TimetableMaster</span>
+            <span className="font-display text-sm font-semibold text-gradient-rainbow">TimetableMaster</span>
             <span className="text-xs text-muted-foreground">{userName}</span>
           </div>
         </div>
