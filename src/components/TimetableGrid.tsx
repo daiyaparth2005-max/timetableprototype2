@@ -39,6 +39,7 @@ export function TimetableGrid({
 }) {
   const { data, update } = useStore();
   const [activeSection, setActiveSection] = useState<SectionKey>("9-12");
+  const [editingCoord, setEditingCoord] = useState<Coord | null>(null);
   const [pending, setPending] = useState<null | {
     src: Coord;
     dst: Coord;
