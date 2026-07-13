@@ -36,7 +36,7 @@ function AppLayout() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar userName={user.name} onLogout={() => { logout(); navigate({ to: "/login" }); }} />
-        <div className="flex flex-1 flex-col">
+        <div className="min-w-0 flex flex-1 flex-col">
           <div className="relative overflow-hidden border-b bg-gradient-to-r from-primary/15 via-fuchsia-500/15 to-cyan-500/15">
             <div className="flex whitespace-nowrap py-1.5 text-xs font-medium tracking-wide animate-marquee">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -64,7 +64,7 @@ function AppLayout() {
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-ring" />
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-8">
+          <main className="min-w-0 flex-1 overflow-x-auto p-4 md:p-8">
             <Outlet />
           </main>
         </div>
